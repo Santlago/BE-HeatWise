@@ -29,11 +29,8 @@ public class Site {
     @URL
     private String url;
 
-    @OneToOne(mappedBy = "site") // mappedBy indicates that Analise owns the relationship
-    private Analise analise;
-
     @ManyToOne
-    @JoinColumn(name = "empresa_id")
+    // @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
 }

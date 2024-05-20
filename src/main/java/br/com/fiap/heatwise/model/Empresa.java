@@ -41,7 +41,7 @@ public class Empresa {
     @NotBlank
     @Email
     private String email;
-
-    @OneToMany(mappedBy = "empresa")
-    private List<Site> sites;
+    
+    @NotBlank
+    private String senha;
 }

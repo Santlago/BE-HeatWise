@@ -27,7 +27,7 @@ public class Analise {
     private String mapaCalor;
 
     @OneToOne
-    @JoinColumn(name = "site_id")
+    // @JoinColumn(name = "site_id")
     private Site site;
 
 }
