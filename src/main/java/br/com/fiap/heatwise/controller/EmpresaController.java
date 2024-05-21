@@ -7,11 +7,14 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,12 +32,14 @@ import br.com.fiap.heatwise.repository.EmpresaRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("empresa")
 @Slf4j
 @CacheConfig(cacheNames = "empresas")
+@Tag(name = "Empresas")
 public class EmpresaController {
 
     @Autowired // Injeção de Dependência - Inversão de Controle
@@ -43,8 +48,11 @@ public class EmpresaController {
     @GetMapping
     @Cacheable
     @Operation(summary = "Listar todas as empresas", description = "Retorna um array com todas as empresas no formato objeto")
-    public List<Empresa> index() {
-        return repository.findAll();
+    public List<EntityModel<Empresa>> index() {
+        var empresas = repository.findAll();
+        return empresas.stream()
+                .map(Empresa::toModel)
+                .collect(Collectors.toList());
     }
 
     @PostMapping
@@ -66,13 +74,13 @@ public class EmpresaController {
             @ApiResponse(responseCode = "200", description = "Empresa encontrada com sucesso"),
             @ApiResponse(responseCode = "404", description = "Empresa não encontrada")
     })
-    public ResponseEntity<Empresa> show(@PathVariable Long id) {
+    public EntityModel<Empresa> show(@PathVariable Long id) {
         log.info("Buscando empresa com id {}", id);
 
-        return repository
-                .findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        var empresa = repository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("empresa não encontrada"));
+
+        return empresa.toEntityModel();
     }
 
     @DeleteMapping("{id}")
@@ -83,10 +91,13 @@ public class EmpresaController {
             @ApiResponse(responseCode = "204", description = "Empresa deletada com sucesso"),
             @ApiResponse(responseCode = "404", description = "Empresa não encontrada")
     })
-    public void destroy(@PathVariable Long id) {
-        log.info("Apagando empresa {}", id);
-        verificarSeEmpresaExiste(id);
+    public ResponseEntity<Object> destroy(@PathVariable Long id) {
+        repository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("empresa não encontrada"));
+
         repository.deleteById(id);
+
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("{id}")
